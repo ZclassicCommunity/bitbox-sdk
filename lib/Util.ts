@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from "axios"
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios"
 import { REST_URL } from "./BITBOX"
 
 export interface AddressDetails {
@@ -18,6 +18,7 @@ export class Util {
   constructor(restURL: string = REST_URL) {
     this.restURL = restURL
   }
+
   public async validateAddress(
     address: string | string[]
   ): Promise<AddressDetails | AddressDetails[]> {
@@ -28,6 +29,7 @@ export class Util {
           `${this.restURL}util/validateAddress/${address}`
         )
         return response.data
+
         // Array of blocks.
       } else if (Array.isArray(address)) {
         // Dev note: must use axios.post for unit test stubbing.
@@ -37,8 +39,10 @@ export class Util {
             addresses: address
           }
         )
+
         return response.data
       }
+
       throw new Error(`Input must be a string or array of strings.`)
     } catch (error) {
       if (error.response && error.response.data) throw error.response.data

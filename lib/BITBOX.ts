@@ -23,16 +23,17 @@ import { Socket } from "./Socket"
 import { Transaction } from "./Transaction"
 import { TransactionBuilder } from "./TransactionBuilder"
 import { Util } from "./Util"
+// import { Wallet } from "./Wallet"
 
 // Defaults
-export const WS_URL = "wss://ws.bitcoin.com"
-export const TWS_URL = "wss://tws.bitcoin.com"
-export const BITSOCKET_URL = "https://bitsocket.bch.sx"
-export const TBITSOCKET_URL = "https://tbitsocket.bitcoin.com"
-export const REST_URL = "https://rest.bitcoin.com/v2/"
-export const TREST_URL = "https://trest.bitcoin.com/v2/"
-export const BITDB_URL = "https://bitdb.bitcoin.com/"
-export const TBITDB_URL = "https://tbitdb.bitcoin.com/"
+export const WS_URL = "wss://ws.zslp.org"
+export const TWS_URL = "wss://tws.zslp.org"
+export const BITSOCKET_URL = "https://bitsocket.zslp.org"
+export const TBITSOCKET_URL = "https://tbitsocket.zslp.org"
+export const REST_URL = "https://rest.zslp.org/v2/"
+export const TREST_URL = "https://trest.zslp.org/v2/"
+export const BITDB_URL = "https://bitdb.zslp.org/"
+export const TBITDB_URL = "https://tbitdb.zslp.org/"
 
 export class BITBOX {
   public restURL: string
@@ -59,6 +60,7 @@ export class BITBOX {
   public Util: Util
   public Socket: any
   public Schnorr: Schnorr
+  // Wallet: Wallet
   constructor(config: IConfig = {}) {
     if (config && config.restURL && config.restURL !== "")
       this.restURL = config.restURL
@@ -92,5 +94,6 @@ export class BITBOX {
     this.Util = new Util(this.restURL)
     this.Socket = Socket
     this.Schnorr = new Schnorr()
+    // this.Wallet = Wallet
   }
 }

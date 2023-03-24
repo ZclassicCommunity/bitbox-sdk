@@ -3,26 +3,27 @@
   a single UTXO.
 */
 
-const BITBOX = require("../../../../lib/BITBOX").BITBOX
-
 // Set NETWORK to either testnet or mainnet
 const NETWORK = `testnet`
 
-// Instantiate BITBOX based on the network.
-const bitbox =
-  NETWORK === `mainnet`
-    ? new BITBOX({ restURL: `https://rest.bitcoin.com/v2/` })
-    : new BITBOX({ restURL: `https://trest.bitcoin.com/v2/` })
+// Instantiate bitbox.
+const bitboxLib = "../../../lib/BITBOX"
+const BITBOX = require(bitboxLib).BITBOX
+
+// Instantiate SLP based on the network.
+let bitbox
+if (NETWORK === `mainnet`)
+  bitbox = new BITBOX({ restURL: `https://rest.bitcoin.com/v2/` })
+else bitbox = new BITBOX({ restURL: `https://trest.bitcoin.com/v2/` })
 
 // Open the wallet generated with create-wallet.
-let walletInfo
 try {
-  walletInfo = require(`../create-wallet/wallet.json`)
+  var walletInfo = require(`../create-wallet/wallet.json`)
 } catch (err) {
   console.log(
     `Could not open wallet.json. Generate a wallet with create-wallet first.`
   )
-  process.exit(1)
+  process.exit(0)
 }
 
 const SEND_ADDR = walletInfo.cashAddress
@@ -30,7 +31,10 @@ const SEND_MNEMONIC = walletInfo.mnemonic
 
 async function consolidateDust() {
   try {
-    const transactionBuilder = new bitbox.TransactionBuilder(NETWORK)
+    // instance of transaction builder
+    if (NETWORK === `mainnet`)
+      var transactionBuilder = new bitbox.TransactionBuilder()
+    else var transactionBuilder = new bitbox.TransactionBuilder("testnet")
 
     const dust = 546
     let sendAmount = 0
@@ -39,23 +43,26 @@ async function consolidateDust() {
     const u = await bitbox.Address.utxo(SEND_ADDR)
 
     // Loop through each UTXO assigned to this address.
-    u.utxos.forEach(utxo => {
+    for (let i = 0; i < u.utxos.length; i++) {
+      const thisUtxo = u.utxos[i]
+
       // If the UTXO is dust...
-      if (utxo.satoshis <= dust) {
-        inputs.push(utxo)
-        sendAmount += utxo.satoshis
+      if (thisUtxo.satoshis <= dust) {
+        inputs.push(thisUtxo)
+
+        sendAmount += thisUtxo.satoshis
 
         // ..Add the utxo as an input to the transaction.
-        transactionBuilder.addInput(utxo.txid, utxo.vout)
+        transactionBuilder.addInput(thisUtxo.txid, thisUtxo.vout)
       }
-    })
+    }
 
     if (inputs.length === 0) {
       console.log(`No dust found in the wallet address.`)
-      process.exit(0)
+      return
     }
 
-    // get byte count to calculate fee. paying 1.0 sat/byte
+    // get byte count to calculate fee. paying 1.2 sat/byte
     const byteCount = bitbox.BitcoinCash.getByteCount(
       { P2PKH: inputs.length },
       { P2PKH: 1 }
@@ -71,7 +78,7 @@ async function consolidateDust() {
       console.log(
         `Transaction fee costs more combined dust. Can't send transaction.`
       )
-      process.exit(1)
+      return
     }
 
     // add output w/ address and amount to send
@@ -97,11 +104,10 @@ async function consolidateDust() {
 
     // build tx
     const tx = transactionBuilder.build()
-
     // output rawhex
     const hex = tx.toHex()
     console.log(`TX hex: ${hex}`)
-    console.log()
+    console.log(` `)
 
     // Broadcast transation to the network
     const broadcast = await bitbox.RawTransactions.sendRawTransaction([hex])
@@ -113,12 +119,18 @@ async function consolidateDust() {
 consolidateDust()
 
 // Generate a change address from a Mnemonic of a private key.
-function changeAddrFromMnemonic(mnemonic, network) {
+function changeAddrFromMnemonic(mnemonic) {
+  // root seed buffer
   const rootSeed = bitbox.Mnemonic.toSeed(mnemonic)
-  const masterHDNode = bitbox.HDNode.fromSeed(rootSeed, network)
+
+  // master HDNode
+  const masterHDNode = bitbox.HDNode.fromSeed(rootSeed, "testnet")
+
+  // HDNode of BIP44 account
   const account = bitbox.HDNode.derivePath(masterHDNode, "m/44'/145'/0'")
 
   // derive the first external change address HDNode which is going to spend utxo
   const change = bitbox.HDNode.derivePath(account, "0/0")
+
   return change
 }

@@ -18,7 +18,7 @@ else bitbox = new BITBOX({ restURL: `https://trest.bitcoin.com/v2/` })
 
 // Open the wallet generated with create-wallet.
 try {
-  var walletInfo = require(`../create-wallet/wallet.json`)
+  var walletInfo = require(`../../applications/wallet/create-wallet/wallet.json`)
 } catch (err) {
   console.log(
     `Could not open wallet.json. Generate a wallet with create-wallet first.`
@@ -26,17 +26,18 @@ try {
   process.exit(0)
 }
 
-// Get the balance of the wallet.
-async function getBalance() {
+const ADDR = walletInfo.cashAddress
+
+async function getUtxos() {
   try {
     // first get BCH balance
-    const balance = await bitbox.Address.details(walletInfo.cashAddress)
+    const utxos = await bitbox.Address.utxo(ADDR)
 
-    console.log(`BCH Balance information:`)
-    console.log(balance)
+    console.log(`UTXO information for address ${ADDR}:`)
+    console.log(utxos)
   } catch (err) {
-    console.error(`Error in getBalance: `, err)
+    console.error(`Error in getUtxos: `, err)
     throw err
   }
 }
-getBalance()
+getUtxos()
